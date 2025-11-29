@@ -10,45 +10,30 @@ permissions:
   pull-requests: write
 
 jobs:
-  sync:
+  sync-pr:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check label and set target branch
-        id: set_target
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set Target Branch Based on Label
+        id: set-target
         run: |
           if [ "${{ github.event.label.name }}" = "dev" ]; then
-            echo "target=dev" >> $GITHUB_OUTPUT
+            echo "TARGET_BRANCH=dev" >> $GITHUB_ENV
           elif [ "${{ github.event.label.name }}" = "stage" ]; then
-            echo "target=stage" >> $GITHUB_OUTPUT
+            echo "TARGET_BRANCH=stage" >> $GITHUB_ENV
           else
-            echo "No valid label found. Exiting."
+            echo "No matching label found, skipping."
             exit 0
           fi
 
-      - name: Checkout release branch
-        uses: actions/checkout@v4
-        with:
-          ref: release  # your default branch
-
-      - name: Create sync branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          BRANCH="sync-release-to-${{ steps.set_target.outputs.target }}-${{ github.run_id }}"
-          git checkout -b $BRANCH
-
-      - name: Merge release → target
-        run: |
-          git fetch origin ${{ steps.set_target.outputs.target }}
-          git merge origin/${{ steps.set_target.outputs.target }} --no-edit || true
-          git push origin HEAD
-
       - name: Create Sync Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v5
         with:
-          branch: ${{ github.ref_name }}
-          base: ${{ steps.set_target.outputs.target }}
-          title: "Sync: release → ${{ steps.set_target.outputs.target }}"
-          body: "Automated sync PR triggered when '${{ github.event.label.name }}' label was added."
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: ${{ env.TARGET_BRANCH }}
+          head: ${{ github.event.pull_request.head.ref }}
+          title: "Sync PR from ${{ github.event.pull_request.head.ref }} → ${{ env.TARGET_BRANCH }}"
+          body: "Automatically created sync PR from ${{ github.event.pull_request.head.ref }} to ${{ env.TARGET_BRANCH }} based on label."
