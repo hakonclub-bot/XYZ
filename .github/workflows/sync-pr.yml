@@ -2,8 +2,7 @@ name: Create Sync PR Based on Label
 
 on:
   pull_request:
-    types:
-      - labeled
+    types: [labeled]
 
 permissions:
   contents: write
@@ -18,26 +17,23 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
-      # --------------------------
-      # Detect Target Branch
-      # --------------------------
       - name: Detect Target Branch
         id: detect
         run: |
-          echo "Label name is: ${{ github.event.label.name }}"
-
-          if [ "${{ github.event.label.name }}" = "Merge to Development" ]; then
-            echo "TARGET_BRANCH=development" >> $GITHUB_ENV
-          elif [ "${{ github.event.label.name }}" = "Merge to Staging" ]; then
-            echo "TARGET_BRANCH=staging" >> $GITHUB_ENV
+          if [ "${{ github.event.label.name }}" = "dev" ]; then
+            echo "TARGET_BRANCH=dev" >> $GITHUB_ENV
+          elif [ "${{ github.event.label.name }}" = "stage" ]; then
+            echo "TARGET_BRANCH=stage" >> $GITHUB_ENV
           else
             echo "No matching label, skipping."
             exit 0
           fi
 
-      # --------------------------
-      # Create Sync Pull Request
-      # --------------------------
+      # 🔥 Force a change so PR is ALWAYS created
+      - name: Force Dummy Change
+        run: |
+          echo "sync triggered at $(date)" > .sync-temp.txt
+
       - name: Create Sync Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
@@ -47,8 +43,7 @@ jobs:
             Automatically created sync PR  
             **From:** ${{ github.event.pull_request.head.ref }}  
             **To:** ${{ env.TARGET_BRANCH }}  
-            Triggered by label: **${{ github.event.label.name }}**
           base: ${{ env.TARGET_BRANCH }}
           head: ${{ github.event.pull_request.head.ref }}
-          branch: "sync/${{ github.event.pull_request.head.ref }}-to-${{ env.TARGET_BRANCH }}"
+          branch: sync/${{ github.event.pull_request.head.ref }}-to-${{ env.TARGET_BRANCH }}
           delete-branch: true
