@@ -13,22 +13,20 @@ jobs:
     if: contains(join(github.event.pull_request.labels.*.name, ','), 'Merge to Development')
     runs-on: ubuntu-latest
     steps:
-      - name: Sync to development
+      - name: Sync to dev
         uses: TreTuna/sync-branches@main
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FROM_BRANCH: ${{ github.event.pull_request.head.ref }}
           TO_BRANCH: dev
-          LABELS: "auto-sync"
 
   sync-to-staging:
     if: contains(join(github.event.pull_request.labels.*.name, ','), 'Merge to Staging')
     runs-on: ubuntu-latest
     steps:
-      - name: Sync to staging
+      - name: Sync to stage
         uses: TreTuna/sync-branches@main
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FROM_BRANCH: ${{ github.event.pull_request.head.ref }}
           TO_BRANCH: stage
-          LABELS: "auto-sync"
