@@ -1,34 +1,34 @@
 name: Sync
 
 on:
-  pull_request:
+  pull_request_target:
     types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   sync-to-development:
     if: contains(join(github.event.pull_request.labels.*.name, ','), 'Merge to Development')
     runs-on: ubuntu-latest
-    name: Syncing branch to development
     steps:
-      - name: Open a Pull Request to development
+      - name: Sync to development
         uses: TreTuna/sync-branches@main
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FROM_BRANCH: ${{ github.head_ref }}
+          FROM_BRANCH: ${{ github.event.pull_request.head.ref }}
           TO_BRANCH: dev
-          REQUIRED_LABEL: 'Merge to Development'
-          NEW_BRANCH_SUFFIX: dev
+          LABELS: "auto-sync"
 
   sync-to-staging:
     if: contains(join(github.event.pull_request.labels.*.name, ','), 'Merge to Staging')
     runs-on: ubuntu-latest
-    name: Syncing branch to staging
     steps:
-      - name: Open a Pull Request to staging
+      - name: Sync to staging
         uses: TreTuna/sync-branches@main
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FROM_BRANCH: ${{ github.head_ref }}
+          FROM_BRANCH: ${{ github.event.pull_request.head.ref }}
           TO_BRANCH: stage
-          REQUIRED_LABEL: 'Merge to Staging'
-          NEW_BRANCH_SUFFIX: stage
+          LABELS: "auto-sync"
