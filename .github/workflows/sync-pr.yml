@@ -12,29 +12,44 @@ permissions:
 jobs:
   sync-pr:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
+      # --------------------------
+      # Detect Target Branch via Label
+      # --------------------------
       - name: Set Target Branch Based on Label
         id: set-target
         run: |
-          if [ "${{ github.event.label.name }}" = "dev" ]; then
+          LABEL="${{ github.event.label.name }}"
+          echo "Detected Label: $LABEL"
+
+          if [ "$LABEL" = "dev" ]; then
             echo "TARGET_BRANCH=dev" >> $GITHUB_ENV
-          elif [ "${{ github.event.label.name }}" = "stage" ]; then
+
+          elif [ "$LABEL" = "stage" ]; then
             echo "TARGET_BRANCH=stage" >> $GITHUB_ENV
+
           else
-            echo "No matching label found, skipping."
+            echo "No matching label found. Skipping job."
             exit 0
           fi
 
+      # --------------------------
+      # Create Sync Pull Request
+      # --------------------------
       - name: Create Sync Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: ${{ env.TARGET_BRANCH }}
           head: ${{ github.event.pull_request.head.ref }}
-          title: "Sync PR from ${{ github.event.pull_request.head.ref }} → ${{ env.TARGET_BRANCH }}"
-          body: "Automatically created sync PR from ${{ github.event.pull_request.head.ref }} to ${{ env.TARGET_BRANCH }} based on label."
-
+          title: "Sync PR: ${{ github.event.pull_request.head.ref }} → ${{ env.TARGET_BRANCH }}"
+          body: |
+            Automatically created Sync PR  
+            **From:** ${{ github.event.pull_request.head.ref }}  
+            **To:** ${{ env.TARGET_BRANCH }}  
+            Triggered by label: **${{ github.event.label.name }}**
