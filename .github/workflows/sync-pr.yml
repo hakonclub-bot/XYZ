@@ -10,7 +10,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  sync-pr:
+  sync:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,22 +19,19 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
 
       # --------------------------
-      # Detect Target Branch via Label
+      # Detect Target Branch
       # --------------------------
-      - name: Set Target Branch Based on Label
-        id: set-target
+      - name: Detect Target Branch
+        id: detect
         run: |
-          LABEL="${{ github.event.label.name }}"
-          echo "Detected Label: $LABEL"
+          echo "Label name is: ${{ github.event.label.name }}"
 
-          if [ "$LABEL" = "dev" ]; then
-            echo "TARGET_BRANCH=dev" >> $GITHUB_ENV
-
-          elif [ "$LABEL" = "stage" ]; then
-            echo "TARGET_BRANCH=stage" >> $GITHUB_ENV
-
+          if [ "${{ github.event.label.name }}" = "Merge to Development" ]; then
+            echo "TARGET_BRANCH=development" >> $GITHUB_ENV
+          elif [ "${{ github.event.label.name }}" = "Merge to Staging" ]; then
+            echo "TARGET_BRANCH=staging" >> $GITHUB_ENV
           else
-            echo "No matching label found. Skipping job."
+            echo "No matching label, skipping."
             exit 0
           fi
 
@@ -45,11 +42,13 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          base: ${{ env.TARGET_BRANCH }}
-          head: ${{ github.event.pull_request.head.ref }}
-          title: "Sync PR: ${{ github.event.pull_request.head.ref }} → ${{ env.TARGET_BRANCH }}"
+          title: "sync: ${{ github.event.pull_request.head.ref }} → ${{ env.TARGET_BRANCH }}"
           body: |
-            Automatically created Sync PR  
+            Automatically created sync PR  
             **From:** ${{ github.event.pull_request.head.ref }}  
             **To:** ${{ env.TARGET_BRANCH }}  
             Triggered by label: **${{ github.event.label.name }}**
+          base: ${{ env.TARGET_BRANCH }}
+          head: ${{ github.event.pull_request.head.ref }}
+          branch: "sync/${{ github.event.pull_request.head.ref }}-to-${{ env.TARGET_BRANCH }}"
+          delete-branch: true
