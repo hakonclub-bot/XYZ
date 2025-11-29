@@ -14,7 +14,7 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FROM_BRANCH: ${{github.head_ref}}
-          TO_BRANCH: development
+          TO_BRANCH: dev
           REQUIRED_LABEL: 'Merge to Development'
           NEW_BRANCH_SUFFIX: dev
   sync-to-staging:
@@ -27,6 +27,6 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FROM_BRANCH: ${{github.head_ref}}
-          TO_BRANCH: staging
+          TO_BRANCH: stage
           REQUIRED_LABEL: 'Merge to Staging'
-          NEW_BRANCH_SUFFIX: staging
+          NEW_BRANCH_SUFFIX: stage
