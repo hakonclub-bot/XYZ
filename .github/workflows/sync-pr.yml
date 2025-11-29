@@ -1,54 +1,32 @@
-name: Create Sync PR Based on Label
-
+name: Sync
 on:
   pull_request:
-    types:
-      - labeled
-
-permissions:
-  contents: write
-  pull-requests: write
+    types: [labeled]
 
 jobs:
-  sync:
+  sync-to-development:
     runs-on: ubuntu-latest
-
+    name: Syncing branch to development
+    if: contains(github.event.pull_request.labels.*.name, 'Merge to Development')
     steps:
-      - uses: actions/checkout@v4
+      - name: Open a Pull Request to development
+        uses: TreTuna/sync-branches@main
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
-
-      # --------------------------
-      # Detect Target Branch
-      # --------------------------
-      - name: Detect Target Branch
-        id: detect
-        run: |
-          echo "Label name is: ${{ github.event.label.name }}"
-
-          if [ "${{ github.event.label.name }}" = "Merge to Development" ]; then
-            echo "TARGET_BRANCH=development" >> $GITHUB_ENV
-          elif [ "${{ github.event.label.name }}" = "Merge to Staging" ]; then
-            echo "TARGET_BRANCH=staging" >> $GITHUB_ENV
-          else
-            echo "No matching label, skipping."
-            exit 0
-          fi
-
-      # --------------------------
-      # Create Sync Pull Request
-      # --------------------------
-      - name: Create Sync Pull Request
-        uses: peter-evans/create-pull-request@v5
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FROM_BRANCH: ${{github.head_ref}}
+          TO_BRANCH: development
+          REQUIRED_LABEL: 'Merge to Development'
+          NEW_BRANCH_SUFFIX: dev
+  sync-to-staging:
+    runs-on: ubuntu-latest
+    name: Syncing branch to staging
+    if: contains(github.event.pull_request.labels.*.name, 'Merge to Staging')
+    steps:
+      - name: Open a Pull Request to staging
+        uses: TreTuna/sync-branches@main
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: "sync: ${{ github.event.pull_request.head.ref }} → ${{ env.TARGET_BRANCH }}"
-          body: |
-            Automatically created sync PR  
-            **From:** ${{ github.event.pull_request.head.ref }}  
-            **To:** ${{ env.TARGET_BRANCH }}  
-            Triggered by label: **${{ github.event.label.name }}**
-          base: ${{ env.TARGET_BRANCH }}
-          head: ${{ github.event.pull_request.head.ref }}
-          branch: "sync/${{ github.event.pull_request.head.ref }}-to-${{ env.TARGET_BRANCH }}"
-          delete-branch: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FROM_BRANCH: ${{github.head_ref}}
+          TO_BRANCH: staging
+          REQUIRED_LABEL: 'Merge to Staging'
+          NEW_BRANCH_SUFFIX: staging
